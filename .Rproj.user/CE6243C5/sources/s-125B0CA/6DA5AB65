@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1551121851942.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "6DA5AB65",
+    "lastKnownWriteTime" : 1551127779,
+    "last_content_update" : 1551127779598,
+    "path" : "C:/Users/user/Dropbox (Personal)/Sensitivity analysis of Mediation/R package/conmediator/R/crosssectional.R",
+    "project_path" : null,
+    "properties" : {
+        "cursorPosition" : "38,33",
+        "scrollLine" : "0"
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

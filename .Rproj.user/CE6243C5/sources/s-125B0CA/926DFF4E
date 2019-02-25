@@ -1,21 +1,21 @@
 {
     "collab_server" : "",
     "contents" : "",
-    "created" : 1550880611991.000,
+    "created" : 1551129293602.000,
     "dirty" : false,
     "encoding" : "UTF-8",
     "folds" : "",
-    "hash" : "2218095833",
-    "id" : "191117B8",
-    "lastKnownWriteTime" : 1550883015,
-    "last_content_update" : 1550883015899,
+    "hash" : "0",
+    "id" : "926DFF4E",
+    "lastKnownWriteTime" : 1551129317,
+    "last_content_update" : 1551129317076,
     "path" : "C:/Users/user/Dropbox (Personal)/Test R package/Test/DESCRIPTION",
     "project_path" : "DESCRIPTION",
     "properties" : {
-        "cursorPosition" : "10,15",
+        "cursorPosition" : "12,0",
         "scrollLine" : "0"
     },
-    "relative_order" : 3,
+    "relative_order" : 5,
     "source_on_save" : false,
     "source_window" : "",
     "type" : "dcf"

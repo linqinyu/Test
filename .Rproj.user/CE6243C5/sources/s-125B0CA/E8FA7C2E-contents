@@ -1,0 +1,135 @@
+#' index for robustness
+#'
+#' what percentage of possibilities of Mu can invalidate/sustain your inference for a1, b1 and c
+#'
+#' @param rxmo correlation between X and Mo
+#' @param rxy correlation between X and Y
+#' @param rymo correlation between Y and Mo
+#' @param nobs number of observations
+#' @param alpha Tpye I error probability
+#'
+#' @return percentage of possibilities of Mu can invalidate/sustain your inference for a1, b1 and c
+#' @importFrom stats qnorm
+#' @import lavaan
+#' @export
+robust <- function(rxmo=-2,rxy=-2,rymo=-2,nobs=0,alpha=0.05) {
+  #check input
+  if (!(check_input(rxmo) && check_input(rxy) && check_input(rymo))) {
+    return("Error: input of correlations is problematic!")
+  }
+  if (nobs<=0) {
+    return("Error: input of sample size is problematic!")
+  }
+  #fit the model with sem package
+  model.omit <- '
+  Mo ~ a1 * X
+  Y ~ b1 * Mo + c * X
+  ind := a1 * b1
+  '
+  cor.matrix.omit <- matrix(c(1,rxmo,rxy,rxmo,1,rymo,rxy,rymo,1),3,3)
+  rownames(cor.matrix.omit) <- colnames(cor.matrix.omit) <- c("X","Mo","Y")
+  fit.omit <- sem(model.omit,sample.cov=cor.matrix.omit,sample.nobs=nobs)
+  #get the parameter estimates and standard errors
+  result <- parameterEstimates(fit.omit)
+  a1tilde <- result[which(result$label=="a1"),]$est
+  a1_se <- result[which(result$label=="a1"),]$se
+  b1tilde <- result[which(result$label=="b1"),]$est
+  b1_se <- result[which(result$label=="b1"),]$se
+  ctilde <- result[which(result$label=="c"),]$est
+  c_se <- result[which(result$label=="c"),]$se
+  #calculate thresholds
+  if (a1tilde >= 0) {
+    a1thr <- a1_se * (qnorm(1-alpha/2))
+  } else {
+    a1thr <- -a1_se * (qnorm(1-alpha/2))
+  }
+  if (b1tilde >= 0) {
+    b1thr <- b1_se * (qnorm(1-alpha/2))
+  } else {
+    b1thr <- -b1_se * (qnorm(1-alpha/2))
+  }
+  if (ctilde >= 0) {
+    cthr <- c_se * (qnorm(1-alpha/2))
+  } else {
+    cthr <- -c_se * (qnorm(1-alpha/2))
+  }
+  total <- invalidate_a1 <- sustain_a1 <- 0
+  invalidate_b1 <- sustain_b1 <- 0
+  invalidate_c <- sustain_c <- 0
+  for (i in -100 : 100) {
+    rxmu <- i/100
+    for (j in -100 : 100) {
+      rymu <- j/10
+      for (k in -100 : 100){
+        rmomu <- k/100
+        #calculate parameters from correlations
+        a1 <- cal_a1(rxmo,rmomu,rxmu)
+        b1 <- cal_b1(rxmo,rxmu,rmomu,rxy,rymo,rymu)
+        c <- cal_c(rxmo,rxmu,rmomu,rxy,rymo,rymu)
+        a2 <- cal_a2(rxmu)
+        b2 <- cal_b2(rxmo,rxmu,rmomu,rxy,rymo,rymu)
+        k <- cal_k(rxmo,rxmu,rmomu)
+        if (constrain_standardized(a1,a2,b1,b2,k,c)) {
+          total <- total + 1
+          bias_a1 <- cal_bias_a1_perc(rxmo,rxmu,rmomu)
+          bias_b1 <- cal_bias_b1_perc(rxmo,rxmu,rmomu,rxy,rymo,rymu)
+          bias_c <- cal_bias_c_perc(rxmo,rxmu,rmomu,rxy,rymo,rymu)
+          if ((a1tilde >= a1thr & a1thr > 0) || (a1tilde <= a1thr & a1thr < 0)) {
+            if (bias_a1 > (a1tilde - a1thr)/a1tilde) {
+              invalidate_a1 <- invalidate_a1 + 1
+            }
+          }
+          if ((a1tilde > 0 & a1tilde < a1thr) || (a1tilde < 0 & a1tilde > a1thr)){
+            if (bias_a1 < (a1tilde - a1thr)/a1tilde) {
+              sustain_a1 <- sustain_a1 + 1
+            }
+          }
+          if ((b1tilde >= b1thr & b1thr > 0) || (b1tilde <= b1thr & b1thr < 0)) {
+            if (bias_b1 > (b1tilde - b1thr)/b1tilde) {
+              invalidate_b1 <- invalidate_b1 + 1
+            }
+          }
+          if ((b1tilde > 0 & b1tilde < b1thr) || (b1tilde < 0 & b1tilde > b1thr)){
+            if (bias_b1 < (b1tilde - b1thr)/b1tilde) {
+              sustain_b1 <- sustain_b1 + 1
+            }
+          }
+          if ((ctilde >= cthr & cthr > 0) || (ctilde <= cthr & cthr < 0)) {
+            if (bias_c > (ctilde - cthr)/ctilde) {
+              invalidate_c <- invalidate_c + 1
+            }
+          }
+          if ((ctilde > 0 & ctilde < cthr) || (ctilde < 0 & ctilde > cthr)){
+            if (bias_c < (ctilde - cthr)/ctilde) {
+              sustain_c <- sustain_c + 1
+            }
+          }
+        }
+      }
+    }
+  }
+  if ((a1tilde >= a1thr & a1thr > 0) || (a1tilde <= a1thr & a1thr < 0)) {
+    invalidate_a1_perc <- 100*invalidate_a1/total
+    cat(sprintf("Among all possibilities of Mu, there are approximately %.2f%% that can invalidate our inference of a1\n",invalidate_a1_perc))
+  }
+  if ((a1tilde > 0 & a1tilde < a1thr) || (a1tilde < 0 & a1tilde > a1thr)) {
+    sustain_a1_perc <- 100*sustain_a1/total
+    cat(sprintf("Among all possibilities of Mu, there are approximately %.2f%% that can sustain our inference of a1\n",sustain_a1_perc))
+  }
+  if ((b1tilde >= b1thr & b1thr > 0) || (b1tilde <= b1thr & b1thr < 0)) {
+    invalidate_b1_perc <- 100*invalidate_b1/total
+    cat(sprintf("Among all possibilities of Mu, there are approximately %.2f%% that can invalidate our inference of b1\n",invalidate_b1_perc))
+  }
+  if ((b1tilde > 0 & b1tilde < b1thr) || (b1tilde < 0 & b1tilde > b1thr)) {
+    sustain_b1_perc <- 100*sustain_b1/total
+    cat(sprintf("Among all possibilities of Mu, there are approximately %.2f%% that can sustain our inference of b1\n",sustain_b1_perc))
+  }
+  if ((ctilde >= cthr & cthr > 0) || (ctilde <= cthr & cthr < 0)) {
+    invalidate_c_perc <- 100*invalidate_c/total
+    cat(sprintf("Among all possibilities of Mu, there are approximately %.2f%% that can invalidate our inference of c\n",invalidate_c_perc))
+  }
+  if ((ctilde > 0 & ctilde < cthr) || (ctilde < 0 & ctilde > cthr)) {
+    sustain_c_perc <- 100*sustain_c/total
+    cat(sprintf("Among all possibilities of Mu, there are approximately %.2f%% that can sustain our inference of c\n",sustain_c_perc))
+  }
+}

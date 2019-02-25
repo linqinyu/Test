@@ -5,7 +5,7 @@ Version: 0.1.0
 Author: person("Qinyun", "Lin", email = "linqinyu@msu.edu", role = c("aut", "cre"))
 Maintainer: Qinyun Lin <linqinyu@msu.edu>
 Description: This package is to test that I can build an R package and share it on github.
-License: GPL(>=2)
+License: GPL-3 | file LICENSE
 Encoding: UTF-8
 LazyData: true
 Imports: lavaan
